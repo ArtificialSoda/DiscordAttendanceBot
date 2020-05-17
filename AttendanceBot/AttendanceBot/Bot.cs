@@ -51,6 +51,8 @@ namespace AttendanceBot
 
             Commands = Client.UseCommandsNext(commandsConfig); // Automatically handles commands
 
+            Commands.RegisterCommands<Attendance>();
+
             await Client.ConnectAsync(); // Connects the bot
 
             await Task.Delay(-1); // Stops the bot from quitting early 

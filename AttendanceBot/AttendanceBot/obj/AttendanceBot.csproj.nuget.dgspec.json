@@ -1,0 +1,75 @@
+{
+  "format": 1,
+  "restore": {
+    "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {}
+  },
+  "projects": {
+    "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
+        "projectName": "AttendanceBot",
+        "projectPath": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
+        "packagesPath": "C:\\Users\\Brent\\.nuget\\packages\\",
+        "outputPath": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Brent\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp3.1"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\Nuget": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp3.1": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "dependencies": {
+            "DSharpPlus": {
+              "target": "Package",
+              "version": "[4.0.0-nightly-00697, )"
+            },
+            "DSharpPlus.CommandsNext": {
+              "target": "Package",
+              "version": "[4.0.0-nightly-00697, )"
+            },
+            "DSharpPlus.Interactivity": {
+              "target": "Package",
+              "version": "[4.0.0-nightly-00697, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.202\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

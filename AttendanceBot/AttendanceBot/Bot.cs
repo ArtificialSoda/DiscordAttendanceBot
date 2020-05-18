@@ -22,7 +22,7 @@ namespace AttendanceBot
         public async Task RunAsync()
         {
             // load in the json config
-            var json = string.Empty; 
+            var json = string.Empty;
             using (var fs = File.OpenRead("config.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync().ConfigureAwait(false);
@@ -40,7 +40,7 @@ namespace AttendanceBot
 
             Client = new DiscordClient(config);
 
-            Client.UseInteractivity(new InteractivityConfiguration{});
+            Client.UseInteractivity(new InteractivityConfiguration { });
 
             var commandsConfig = new CommandsNextConfiguration
             {
@@ -51,7 +51,7 @@ namespace AttendanceBot
 
             Commands = Client.UseCommandsNext(commandsConfig); // Automatically handles commands
 
-            Commands.RegisterCommands<Attendance>();
+            Commands.RegisterCommands<AttendanceCommand>();
 
             await Client.ConnectAsync(); // Connects the bot
 

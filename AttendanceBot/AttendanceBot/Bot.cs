@@ -45,7 +45,6 @@ namespace AttendanceBot
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new string[] { configJson.Prefix }, // Prefix used to communicate with bot
-                EnableDms = false, // Can only use commands on the server 
                 EnableMentionPrefix = true // Allows bot to be communicated with by mentioning it
             };
 

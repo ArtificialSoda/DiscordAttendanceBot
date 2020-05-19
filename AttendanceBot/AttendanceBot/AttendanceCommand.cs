@@ -11,21 +11,29 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Globalization;
+using DSharpPlus.EventArgs;
+using DSharpPlus.Net;
+using DSharpPlus;
+using System.Runtime.InteropServices;
 
 namespace AttendanceBot
 {
+    /// <summary>
+    /// When command is called, a poll is built and outputted, and an attendance report is built based on reactions. Report is then sent to teacher via DM
+    /// </summary>
     class AttendanceCommand : BaseCommandModule
     {
-        public List<string> PresentStudents { get; set; } = new List<string>();
-        public List<Student> AllStudents { get; set; } = new List<Student>();
-        public int Section { get; set; }
+        public List<string> presentStudents = new List<string>();
+        public List<Student> allStudents = new List<Student>();
+        public int section;
+        public string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
 
         [Command("attendance")]
-        public async Task Poll(CommandContext ctx, int section) // Takes in all information about the command
+        public async Task Poll(CommandContext ctx, int currentSection) // Takes in all information about the command
         {
-            Section = section;
+            section = currentSection;
 
-            TimeSpan duration = new TimeSpan(0, 0, 5); // How long the poll remains active for
+            TimeSpan duration = new TimeSpan(0, 0, 5); // How long the poll remains active for   *needs to be changed (5 seconds was used for testing) 
 
             var interactivity = ctx.Client.GetInteractivity();
 
@@ -52,26 +60,31 @@ namespace AttendanceBot
             foreach (string item in studentInfo)
             {
                 studentInfoSplit = item.Substring(27).Split("#");
-                PresentStudents.Add(studentInfoSplit[0]); // Stores each username in the List<> of names
+                presentStudents.Add(studentInfoSplit[0]); // Stores each username in the List<> of names
             }
 
             await ReadStudentList();
 
             await GenerateAttendanceReport();
+
+            await ctx.Member.SendFileAsync(reportFile); // Sends attedance report file to teacher via DM after it's made
         }
 
+        /// <summary>
+        /// Reads the student list and stores the information in the list of Student's
+        /// </summary>
         public Task ReadStudentList()
         {
-            string file = "../../../../../Year1StudentList.csv";
+            string file = "../../../../../Year1StudentList.csv"; // Student list to be read
 
             StreamReader sr = new StreamReader(file);
 
-            string line = sr.ReadLine();
+            string line = sr.ReadLine(); // reads titles but doesn't store them
             for (int i = 0; (line = sr.ReadLine()) != null; i++)
             {
                 string[] values = line.Split(",");
-                AllStudents.Add(new Student(values[0], values[1], int.Parse(values[2]), values[3], int.Parse(values[4])));
-            }
+                allStudents.Add(new Student(values[0], values[1], int.Parse(values[2]), values[3], int.Parse(values[4]))); // Creates a new students using the information 
+            }                                                                                                              // from the read line as arguments
 
             if (sr != null)
                 sr.Close();
@@ -79,6 +92,9 @@ namespace AttendanceBot
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Builds and saves an attendance report consisting of present students from both class sections, and all absent students from the specified section
+        /// </summary>
         public Task GenerateAttendanceReport()
         {
             int i;
@@ -88,21 +104,21 @@ namespace AttendanceBot
             report.Append(string.Format("{0}\nPresent Students\n\n", DateTime.Now.ToString("MM-dd")));
            
             // Add present students to report
-            for (i = 0; i < PresentStudents.Count; i++)
+            for (i = 0; i < presentStudents.Count; i++)
             {
-                for (int j = 0; j < AllStudents.Count; j++)
+                for (int j = 0; j < allStudents.Count; j++)
                 {
-                    if (PresentStudents[i] == AllStudents[j].UserName)
+                    if (presentStudents[i] == allStudents[j].UserName)
                     {
-                        AllStudents[j].Present = true;
-                        if (AllStudents[j].Section == Section)
-                            report.Append(string.Format("{0},{1}\n", AllStudents[j].LastName, AllStudents[j].FirstName));
+                        allStudents[j].Present = true;
+                        if (allStudents[j].Section == section)
+                            report.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
                         else
                         {
                             if (outOfSectionStudents == null)
                                 outOfSectionStudents = new StringBuilder();
 
-                            outOfSectionStudents.Append(string.Format("{0},{1}\n", AllStudents[j].LastName, AllStudents[j].FirstName));
+                            outOfSectionStudents.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
                         }
                     }
                 }
@@ -117,15 +133,14 @@ namespace AttendanceBot
 
             // Add absent students to report
             report.Append("\n\nAbsent Students\n\n");
-            for (i = 0; i < AllStudents.Count; i++)
+            for (i = 0; i < allStudents.Count; i++)
             {
-                if (AllStudents[i].Present == false && AllStudents[i].Section == Section)
-                    report.Append(string.Format("{0},{1}\n", AllStudents[i].LastName, AllStudents[i].FirstName));
+                if (allStudents[i].Present == false && allStudents[i].Section == section)
+                    report.Append(string.Format("{0},{1}\n", allStudents[i].LastName, allStudents[i].FirstName));
             }
 
             // Write the report
-            string filename = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
-            StreamWriter sr = new StreamWriter(filename, true);
+            StreamWriter sr = new StreamWriter(reportFile, true);
             sr.Write(Convert.ToString(report));
             sr.Close();
 

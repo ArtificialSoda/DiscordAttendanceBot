@@ -15,6 +15,7 @@ using DSharpPlus.EventArgs;
 using DSharpPlus.Net;
 using DSharpPlus;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace AttendanceBot
 {
@@ -23,15 +24,12 @@ namespace AttendanceBot
     /// </summary>
     class AttendanceCommand : BaseCommandModule
     {
-        public List<string> presentStudents = new List<string>();
-        public List<Student> allStudents = new List<Student>();
-        public int section;
-        public string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
-
         [Command("attendance")]
         public async Task Poll(CommandContext ctx, int currentSection) // Takes in all information about the command
         {
-            section = currentSection;
+            List<string> presentStudents = new List<string>();
+            List<Student> allStudents = new List<Student>();
+            string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
 
             TimeSpan duration = new TimeSpan(0, 0, 5); // How long the poll remains active for   *needs to be changed (5 seconds was used for testing) 
 
@@ -63,17 +61,19 @@ namespace AttendanceBot
                 presentStudents.Add(studentInfoSplit[0]); // Stores each username in the List<> of names
             }
 
-            await ReadStudentList();
+            await ReadStudentList(allStudents);
 
-            await GenerateAttendanceReport();
+            await GenerateAttendanceReport(presentStudents, allStudents, currentSection, reportFile);
 
             await ctx.Member.SendFileAsync(reportFile); // Sends attedance report file to teacher via DM after it's made
+
+            await MessageAbsentStudents(ctx, allStudents, currentSection);
         }
 
         /// <summary>
         /// Reads the student list and stores the information in the list of Student's
         /// </summary>
-        public Task ReadStudentList()
+        public Task ReadStudentList(List<Student> allStudents)
         {
             string file = "../../../../../Year1StudentList.csv"; // Student list to be read
 
@@ -95,7 +95,7 @@ namespace AttendanceBot
         /// <summary>
         /// Builds and saves an attendance report consisting of present students from both class sections, and all absent students from the specified section
         /// </summary>
-        public Task GenerateAttendanceReport()
+        public Task GenerateAttendanceReport(List<string> presentStudents, List<Student> allStudents, int section, string reportFile)
         {
             int i;
             StringBuilder report = new StringBuilder();
@@ -145,6 +145,30 @@ namespace AttendanceBot
             sr.Close();
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Auto-sends a message vs DM telling students that their were absent from class
+        /// </summary>
+        static async Task MessageAbsentStudents(CommandContext ctx, List<Student> allStudents, int section)
+        {
+            string[] memberInfoSplit;
+            var allMembers = await ctx.Guild.GetAllMembersAsync().ConfigureAwait(false);
+            string membersInfo = string.Join("\n", allMembers); // Makes a list of all server members
+            string[] memberInfo = membersInfo.Split("\n"); // Seperates the list into individual lines and stores them
+
+            for (int i = 0; i < memberInfo.Length; i++)
+            {
+                memberInfoSplit = memberInfo[i].Substring(27).Split("#"); // Seperates the username from other info
+
+                for (int j = 0; j < allStudents.Count; j++)
+                {
+                    if (memberInfo[0] == allStudents[j].UserName && allStudents[j].Section == section && allStudents[j].Present == false) // Finds absent students from current section
+                    {
+                        await allMembers.ToArray()[i].SendMessageAsync(string.Format("You were absent from {0} on {1}", ctx.Guild.Name, DateTime.Now.ToString("MM-dd"))); 
+                    }
+                }
+            }
         }
     }
 }

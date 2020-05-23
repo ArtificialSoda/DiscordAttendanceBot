@@ -25,10 +25,11 @@ namespace AttendanceBot
     class AttendanceCommand : BaseCommandModule
     {
         [Command("attendance")]
-        public async Task Poll(CommandContext ctx, int currentSection) // Takes in all information about the command
+        public async Task Poll(CommandContext ctx) // Takes in all information about the command
         {
-            List<string> presentStudents = new List<string>();
             List<Student> allStudents = new List<Student>();
+            int year;
+            int section;
             string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
 
             TimeSpan duration = new TimeSpan(0, 0, 5); // How long the poll remains active for   *needs to be changed (5 seconds was used for testing) 
@@ -44,50 +45,135 @@ namespace AttendanceBot
 
             await pollMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":raised_hand:")).ConfigureAwait(false); // Defines the emojis to be used in the poll
 
-            var result = await interactivity.CollectReactionsAsync(pollMessage, duration).ConfigureAwait(false); // Collect poll reactions
+            var pollResults = await interactivity.CollectReactionsAsync(pollMessage, duration).ConfigureAwait(false); // Collect poll reactions
 
-            var results = result.Select(x => $"{x.Users.ToArray()[0]}");
+            var results = pollResults.Select(x => $"{x.Users.ToArray()[0]}");
 
             string attendanceInfo = string.Join("\n", results); // Makes a list of the info of the students who answered the poll
 
             string[] studentInfo = attendanceInfo.Split("\n"); // Seperates the list into individual lines and stores them
 
-            string[] studentInfoSplit;
+            await GetStudents(ctx, allStudents);
 
-            // Extracts just the username of each present student
-            foreach (string item in studentInfo)
-            {
-                studentInfoSplit = item.Substring(27).Split("#");
-                presentStudents.Add(studentInfoSplit[0]); // Stores each username in the List<> of names
-            }
+            await GetPresentStudents(ctx, allStudents, studentInfo, out year, out section);
 
-            await ReadStudentList(allStudents);
-
-            await GenerateAttendanceReport(presentStudents, allStudents, currentSection, reportFile);
+            await GenerateAttendanceReport(allStudents, reportFile, year, section);
 
             await ctx.Member.SendFileAsync(reportFile); // Sends attedance report file to teacher via DM after it's made
 
-            await MessageAbsentStudents(ctx, allStudents, currentSection);
+            await MessageAbsentStudents(ctx, allStudents, year, section);
+        }
+
+
+        /// <summary>
+        /// Adds all of the students in the server to the List of Students
+        /// </summary>
+        static async Task GetStudents(CommandContext ctx, List<Student> allStudents)
+        {
+            var allMembers = await ctx.Guild.GetAllMembersAsync().ConfigureAwait(false);
+            string membersInfo = string.Join("\n", allMembers); // Makes a list of all server members
+            string[] memberInfo = membersInfo.Split("\n"); // Seperates the list into individual lines and stores them
+
+            string[] split;
+            string memberNickName;
+            string memberYrRaw;
+            string memberSectRaw;
+            ulong memberID;
+            int memberYear;
+            int memberSection;
+
+            for (int i = 0; i < memberInfo.Length; i++)
+            {
+                if (allMembers.ToArray()[i].Roles.Count() == 2 && allMembers.ToArray()[i].IsBot == false)
+                {
+                    split = memberInfo[i].Split("(");
+                    memberNickName = split[1].Substring(0, split[1].Length - 1);
+
+                    memberID = Convert.ToUInt64(split[0].Substring(7, 18));
+
+                    split = allMembers.ToArray()[i].Roles.ToArray()[0].ToString().Split("; ");
+                    memberYrRaw = split[1];
+
+                    if (memberYrRaw == "First Year")
+                        memberYear = 1;
+                    else if (memberYrRaw == "Second Year")
+                        memberYear = 2;
+                    else if (memberYrRaw == "Third Year")
+                        memberYear = 3;
+                    else
+                        memberYear = 0;
+
+                    split = allMembers.ToArray()[i].Roles.ToArray()[1].ToString().Split("; ");
+                    memberSectRaw = split[1];
+
+                    if (memberSectRaw == "Section One")
+                        memberSection = 1;
+                    else if (memberSectRaw == "Section Two")
+                        memberSection = 2;
+                    else
+                        memberSection = 0;
+
+                    if (memberYear != 0 && memberSection != 0) // Only adds students with valid years and sections
+                        allStudents.Add(new Student(memberNickName, memberYear, memberSection, memberID));
+
+                }
+            }
         }
 
         /// <summary>
-        /// Reads the student list and stores the information in the list of Student's
+        /// Finds present students who reacted to the poll and adds 1 to their times present, then finds the current year and section
         /// </summary>
-        public Task ReadStudentList(List<Student> allStudents)
+        static Task GetPresentStudents(CommandContext ctx, List<Student> allStudents, string[] studentInfo, out int year, out int section)
         {
-            string file = "../../../../../Year1StudentList.csv"; // Student list to be read
+            string[] split;
+            ulong studentID;
+            int[] years = new int[3];
+            int[] sections = new int[2];
 
-            StreamReader sr = new StreamReader(file);
-
-            string line = sr.ReadLine(); // reads titles but doesn't store them
-            for (int i = 0; (line = sr.ReadLine()) != null; i++)
+            // Get present students 
+            for (int i = 0; i < studentInfo.Length; i++)
             {
-                string[] values = line.Split(",");
-                allStudents.Add(new Student(values[0], values[1], int.Parse(values[2]), values[3], int.Parse(values[4]))); // Creates a new students using the information 
-            }                                                                                                              // from the read line as arguments
+                split = studentInfo[i].Split("(");
 
-            if (sr != null)
-                sr.Close();
+                studentID = Convert.ToUInt64(split[0].Substring(7, 18));
+
+                for (int j = 0; j < allStudents.Count; j++)
+                {
+                    if (studentID == allStudents[j].IdNum)
+                    {
+                        allStudents[j].TimesPresent++;
+                        years[allStudents[j].Year - 1]++;
+                        sections[allStudents[j].Section - 1]++;
+                    }
+                }
+            }
+
+            // Get class section
+            int highestValue = sections[0];
+            section = 0;
+            for (int i = 1; i < sections.Length; i++)
+            {
+                if (sections[i] > highestValue)
+                {
+                    section = i;
+                    highestValue = sections[i];
+                }
+            }
+
+            // Get class year
+            highestValue = years[0];
+            year = 0;
+            for (int i = 1; i < years.Length; i++)
+            {
+                if (years[i] > highestValue)
+                {
+                    year = i;
+                    highestValue = years[i];
+                }
+            }
+
+            section++;
+            year++;
 
             return Task.CompletedTask;
         }
@@ -95,32 +181,36 @@ namespace AttendanceBot
         /// <summary>
         /// Builds and saves an attendance report consisting of present students from both class sections, and all absent students from the specified section
         /// </summary>
-        public Task GenerateAttendanceReport(List<string> presentStudents, List<Student> allStudents, int section, string reportFile)
+        public Task GenerateAttendanceReport(List<Student> allStudents, string reportFile, int year, int section)
         {
             int i;
             StringBuilder report = new StringBuilder();
             StringBuilder outOfSectionStudents = null;
+            StringBuilder absentStudents = null;
 
-            report.Append(string.Format("{0}\nPresent Students\n\n", DateTime.Now.ToString("MM-dd")));
-           
-            // Add present students to report
-            for (i = 0; i < presentStudents.Count; i++)
+            report.Append(string.Format("Year {0} Section {1} - {2}\nPresent Students\n\n", year, section, DateTime.Now.ToString("MM-dd")));
+
+            // Builder different parts of report
+            for (i = 0; i < allStudents.Count; i++)
             {
-                for (int j = 0; j < allStudents.Count; j++)
+                if (allStudents[i].TimesPresent > 0)
                 {
-                    if (presentStudents[i] == allStudents[j].UserName)
+                    if (allStudents[i].Section == section)
+                        report.Append(string.Format("{0}\n", allStudents[i].NickName));
+                    else
                     {
-                        allStudents[j].Present = true;
-                        if (allStudents[j].Section == section)
-                            report.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
-                        else
-                        {
-                            if (outOfSectionStudents == null)
-                                outOfSectionStudents = new StringBuilder();
+                        if (outOfSectionStudents == null)
+                            outOfSectionStudents = new StringBuilder();
 
-                            outOfSectionStudents.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
-                        }
+                        outOfSectionStudents.Append(string.Format("{0}\n", allStudents[i].NickName));
                     }
+                }
+                else if (allStudents[i].TimesPresent == 0 && allStudents[i].Section == section)
+                {
+                    if (absentStudents == null)
+                        absentStudents = new StringBuilder();
+
+                    absentStudents.Append(string.Format("{0}\n", allStudents[i].NickName));
                 }
             }
 
@@ -132,11 +222,10 @@ namespace AttendanceBot
             }
 
             // Add absent students to report
-            report.Append("\n\nAbsent Students\n\n");
-            for (i = 0; i < allStudents.Count; i++)
+            if (absentStudents != null)
             {
-                if (allStudents[i].Present == false && allStudents[i].Section == section)
-                    report.Append(string.Format("{0},{1}\n", allStudents[i].LastName, allStudents[i].FirstName));
+                report.Append("\nAbsent Students\n\n");
+                report.Append(absentStudents);
             }
 
             // Write the report
@@ -150,20 +239,23 @@ namespace AttendanceBot
         /// <summary>
         /// Auto-sends a message vs DM telling students that their were absent from class
         /// </summary>
-        static async Task MessageAbsentStudents(CommandContext ctx, List<Student> allStudents, int section)
+        static async Task MessageAbsentStudents(CommandContext ctx, List<Student> allStudents, int year, int section)
         {
-            string[] memberInfoSplit;
             var allMembers = await ctx.Guild.GetAllMembersAsync().ConfigureAwait(false);
             string membersInfo = string.Join("\n", allMembers); // Makes a list of all server members
             string[] memberInfo = membersInfo.Split("\n"); // Seperates the list into individual lines and stores them
+            string[] split;
+            ulong memberID;
 
             for (int i = 0; i < memberInfo.Length; i++)
             {
-                memberInfoSplit = memberInfo[i].Substring(27).Split("#"); // Seperates the username from other info
+                split = memberInfo[i].Split("(");
+
+                memberID = Convert.ToUInt64(split[0].Substring(7, 18));
 
                 for (int j = 0; j < allStudents.Count; j++)
                 {
-                    if (memberInfo[0] == allStudents[j].UserName && allStudents[j].Section == section && allStudents[j].Present == false) // Finds absent students from current section
+                    if (memberID == allStudents[j].IdNum && allStudents[j].Section == section && allStudents[j].Year == year && allStudents[j].TimesPresent == 0) // Finds absent students from current section
                     {
                         await allMembers.ToArray()[i].SendMessageAsync(string.Format("You were absent from {0} on {1}", ctx.Guild.Name, DateTime.Now.ToString("MM-dd"))); 
                     }

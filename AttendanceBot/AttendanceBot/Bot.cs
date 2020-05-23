@@ -45,12 +45,15 @@ namespace AttendanceBot
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new string[] { configJson.Prefix }, // Prefix used to communicate with bot
-                EnableMentionPrefix = true // Allows bot to be communicated with by mentioning it
+                EnableMentionPrefix = true, // Allows bot to be communicated with by mentioning it
+                EnableDefaultHelp = false // Disables the default help command
             };
 
             Commands = Client.UseCommandsNext(commandsConfig); // Automatically handles commands
 
             Commands.RegisterCommands<AttendanceCommand>();
+
+            Commands.RegisterCommands<HelpCommand>();
 
             await Client.ConnectAsync(); // Connects the bot
 

@@ -22,14 +22,16 @@ namespace AttendanceBot
         public async Task Poll(CommandContext ctx,
                               [Description("Duration of poll (e.g. 90m, 1h30m)")] TimeSpan classDuration,
                               [Description("Duration of poll (e.g: 90s, 3m)")] TimeSpan pollDuration, 
-                              [Description("Student section")] int currentSection)
+                              [Description("Student section")] int currentSection,
+                              [Description("Student year")]int currentYear)
         {
-            string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
+            string reportFile = string.Format("../../../../../AttendanceReportS{0}Y{1}-{2}.csv", currentSection, currentYear, DateTime.Now.ToString("MM-dd"));
             
             List<string> presentStudents = new List<string>();
             List<Student> allStudents = new List<Student>();
-           
+
             var interactivity = ctx.Client.GetInteractivity();
+
             var attendanceEmoji = DiscordEmoji.FromName(ctx.Client, ":raised_hand:");
 
             var pollEmbed = new DiscordEmbedBuilder
@@ -40,13 +42,18 @@ namespace AttendanceBot
                 Color = DiscordColor.Green
             };
 
+            #region Create Poll
+
             // Generates poll
             var pollMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed).ConfigureAwait(false);
-            await pollMessage.CreateReactionAsync(attendanceEmoji).ConfigureAwait(false); 
+            await pollMessage.CreateReactionAsync(attendanceEmoji).ConfigureAwait(false);
 
             // Extracts the usernames of people who reacted to the poll
             var result = await interactivity.CollectReactionsAsync(pollMessage, pollDuration).ConfigureAwait(false);
             var results = result.Select(x => $"{x.Users.ToArray()[0]}");
+
+            await ctx.Channel.SendMessageAsync($"Attendance successfully taken on {DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm")}.");
+            await pollMessage.DeleteAsync();
 
             string[] reactInfo = string.Join("\n", results).Split("\n");
             string[] usersWhoReacted = new string[reactInfo.Length];
@@ -95,6 +102,7 @@ namespace AttendanceBot
                     await ctx.Channel.SendMessageAsync($"Student is present: {user}").ConfigureAwait(false);
                 }
             }
+            #endregion
 
             await ReadStudentList(allStudents);
 

@@ -2,20 +2,12 @@
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.EventHandling;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Globalization;
-using DSharpPlus.EventArgs;
-using DSharpPlus.Net;
-using DSharpPlus;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace AttendanceBot
 {
@@ -25,40 +17,83 @@ namespace AttendanceBot
     class AttendanceCommand : BaseCommandModule
     {
         [Command("attendance")]
-        public async Task Poll(CommandContext ctx, int currentSection) // Takes in all information about the command
+        [Description("Takes periodic class attendance via student reaction to the attendance poll.")]
+        [RequireRoles(RoleCheckMode.Any, "Teacher")]
+        public async Task Poll(CommandContext ctx,
+                              [Description("Duration of poll (e.g. 90m, 1h30m)")] TimeSpan classDuration,
+                              [Description("Duration of poll (e.g: 90s, 3m)")] TimeSpan pollDuration, 
+                              [Description("Student section")] int currentSection)
         {
+            string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
+            
             List<string> presentStudents = new List<string>();
             List<Student> allStudents = new List<Student>();
-            string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
-
-            TimeSpan duration = new TimeSpan(0, 0, 5); // How long the poll remains active for   *needs to be changed (5 seconds was used for testing) 
-
+           
             var interactivity = ctx.Client.GetInteractivity();
+            var attendanceEmoji = DiscordEmoji.FromName(ctx.Client, ":raised_hand:");
 
             var pollEmbed = new DiscordEmbedBuilder
             {
-                Title = "Attendance Poll"
+                Title = "Attendance Poll",
+                Description = $"React with '{attendanceEmoji}' to confirm your attendance.",
+                ThumbnailUrl = ctx.Client.CurrentUser.AvatarUrl,
+                Color = DiscordColor.Green
             };
 
+            // Generates poll
             var pollMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed).ConfigureAwait(false);
+            await pollMessage.CreateReactionAsync(attendanceEmoji).ConfigureAwait(false); 
 
-            await pollMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":raised_hand:")).ConfigureAwait(false); // Defines the emojis to be used in the poll
-
-            var result = await interactivity.CollectReactionsAsync(pollMessage, duration).ConfigureAwait(false); // Collect poll reactions
-
+            // Extracts the usernames of people who reacted to the poll
+            var result = await interactivity.CollectReactionsAsync(pollMessage, pollDuration).ConfigureAwait(false);
             var results = result.Select(x => $"{x.Users.ToArray()[0]}");
 
-            string attendanceInfo = string.Join("\n", results); // Makes a list of the info of the students who answered the poll
+            string[] reactInfo = string.Join("\n", results).Split("\n");
+            string[] usersWhoReacted = new string[reactInfo.Length];
 
-            string[] studentInfo = attendanceInfo.Split("\n"); // Seperates the list into individual lines and stores them
-
-            string[] studentInfoSplit;
-
-            // Extracts just the username of each present student
-            foreach (string item in studentInfo)
+            const int START_INDEX = 27;
+            for (int i = 0; i < reactInfo.Length; i++)
             {
-                studentInfoSplit = item.Substring(27).Split("#");
-                presentStudents.Add(studentInfoSplit[0]); // Stores each username in the List<> of names
+                string[] user = reactInfo[i].Substring(START_INDEX).Split("#");
+                usersWhoReacted[i] = (user[0]); // Stores usernames of people who reacted
+            }
+
+            // Extracts the usernames of people in the VC (if the teacher is in VC)
+            var teacherVC = ctx.Member?.VoiceState?.Channel; //VC channel
+
+            if (teacherVC != null)
+            {
+                var resultsVC = teacherVC.Users.ToArray()[0];
+
+                string[] userInfo = string.Join("\n", resultsVC).Split("\n");
+                string[] usersInVC = new string[reactInfo.Length];
+
+                for (int i = 0; i < userInfo.Length; i++)
+                {
+                    string[] user = userInfo[i].Substring(START_INDEX).Split("#");
+                    usersInVC[i] = (user[0]); // Stores usernames of people in the VC
+                }
+
+                // Filters out reactions made by people not in VC
+                foreach (string user in usersWhoReacted)
+                {
+                    if (usersInVC.Contains(user))
+                    {
+                        presentStudents.Add(user);
+                        await ctx.Channel.SendMessageAsync($"Student is present: {user}").ConfigureAwait(false);
+
+                    }
+                    else
+                        await ctx.Channel.SendMessageAsync($"Student is not present because absent in the {teacherVC.Name}: {user}").ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                foreach (string user in usersWhoReacted)
+                {
+                    presentStudents.Add(user);
+                    await ctx.Channel.SendMessageAsync($"Student is present: {user}").ConfigureAwait(false);
+                }
             }
 
             await ReadStudentList(allStudents);
@@ -71,7 +106,7 @@ namespace AttendanceBot
         }
 
         /// <summary>
-        /// Reads the student list and stores the information in the list of Student's
+        /// Reads the student list and stores the information in the list of Students
         /// </summary>
         public Task ReadStudentList(List<Student> allStudents)
         {
@@ -97,14 +132,13 @@ namespace AttendanceBot
         /// </summary>
         public Task GenerateAttendanceReport(List<string> presentStudents, List<Student> allStudents, int section, string reportFile)
         {
-            int i;
             StringBuilder report = new StringBuilder();
-            StringBuilder outOfSectionStudents = null;
+            StringBuilder outOfSectionStudents = new StringBuilder();
 
             report.Append(string.Format("{0}\nPresent Students\n\n", DateTime.Now.ToString("MM-dd")));
            
             // Add present students to report
-            for (i = 0; i < presentStudents.Count; i++)
+            for (int i = 0; i < presentStudents.Count; i++)
             {
                 for (int j = 0; j < allStudents.Count; j++)
                 {
@@ -114,12 +148,7 @@ namespace AttendanceBot
                         if (allStudents[j].Section == section)
                             report.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
                         else
-                        {
-                            if (outOfSectionStudents == null)
-                                outOfSectionStudents = new StringBuilder();
-
                             outOfSectionStudents.Append(string.Format("{0},{1}\n", allStudents[j].LastName, allStudents[j].FirstName));
-                        }
                     }
                 }
             }
@@ -133,7 +162,7 @@ namespace AttendanceBot
 
             // Add absent students to report
             report.Append("\n\nAbsent Students\n\n");
-            for (i = 0; i < allStudents.Count; i++)
+            for (int i = 0; i < allStudents.Count; i++)
             {
                 if (allStudents[i].Present == false && allStudents[i].Section == section)
                     report.Append(string.Format("{0},{1}\n", allStudents[i].LastName, allStudents[i].FirstName));

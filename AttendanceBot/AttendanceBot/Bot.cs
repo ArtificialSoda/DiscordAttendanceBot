@@ -9,26 +9,36 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-
+  
 
 namespace AttendanceBot
 {
     class Bot
     {
-        public DiscordClient Client { get; private set; }
-        public InteractivityExtension Interactivity { get; private set; }
-        public CommandsNextExtension Commands { get; private set; } // Allows for commands to be set in the bot
+        #region Properties
+        public DiscordClient Client { get; private set; } // Represents the bot itself
+        public InteractivityExtension Interactivity { get; private set; } // Allows interactivity (i.e. polls) to be set
+        public CommandsNextExtension Commands { get; private set; } // Allows for commands to be set
+        #endregion
 
+        /// <summary>
+        /// Runs the bot.
+        /// </summary>
+        /// <returns></returns>
         public async Task RunAsync()
         {
-            // load in the json config
+            #region Bot Configuration
+            
+            // Load in the JSON configuration (token & prefix)
             var json = string.Empty;
+
             using (var fs = File.OpenRead("config.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync().ConfigureAwait(false);
 
             var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
 
+            // Configures the bot 
             var config = new DiscordConfiguration()
             {
                 Token = configJson.Token,
@@ -39,21 +49,32 @@ namespace AttendanceBot
             };
 
             Client = new DiscordClient(config);
+            #endregion
 
-            Client.UseInteractivity(new InteractivityConfiguration { });
+            #region Enable Interactivity
+            
+            Client.UseInteractivity(new InteractivityConfiguration
+            {
+                Timeout = TimeSpan.FromMinutes(5) 
+            });
+            #endregion
 
+            #region Commands Configuration
+           
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new string[] { configJson.Prefix }, // Prefix used to communicate with bot
-                EnableMentionPrefix = true // Allows bot to be communicated with by mentioning it
+                EnableMentionPrefix = true, // Allows bot to be communicated with by mentioning it
             };
-
             Commands = Client.UseCommandsNext(commandsConfig); // Automatically handles commands
-
+            
+            // Enables user-created commands
             Commands.RegisterCommands<AttendanceCommand>();
+            Commands.RegisterCommands<TestClass>();
+            #endregion 
 
+           
             await Client.ConnectAsync(); // Connects the bot
-
             await Task.Delay(-1); // Stops the bot from quitting early 
         }
     }

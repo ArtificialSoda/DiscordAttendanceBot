@@ -53,9 +53,9 @@ namespace AttendanceBot
 
             string[] studentInfo = attendanceInfo.Split("\n"); // Seperates the list into individual lines and stores them
 
-            await GetStudents(ctx, allStudents);
+            await GetStudents(ctx, allStudents); // Get all students in the server
 
-            await GetPresentStudents(ctx, allStudents, studentInfo, out year, out section);
+            await GetPresentStudents(ctx, allStudents, studentInfo, out year, out section); // Get students who reacted to the poll and fine current year and section
 
             await GenerateAttendanceReport(allStudents, reportFile, year, section);
 
@@ -86,14 +86,18 @@ namespace AttendanceBot
             {
                 if (allMembers.ToArray()[i].Roles.Count() == 2 && allMembers.ToArray()[i].IsBot == false)
                 {
+                    // Get nickname from string member info
                     split = memberInfo[i].Split("(");
                     memberNickName = split[1].Substring(0, split[1].Length - 1);
 
+                    // Get member ID from split string of member info
                     memberID = Convert.ToUInt64(split[0].Substring(7, 18));
 
+                    // Get member year from first role
                     split = allMembers.ToArray()[i].Roles.ToArray()[0].ToString().Split("; ");
                     memberYrRaw = split[1];
 
+                    // Get year as an integer from the string role
                     if (memberYrRaw == "First Year")
                         memberYear = 1;
                     else if (memberYrRaw == "Second Year")
@@ -103,9 +107,11 @@ namespace AttendanceBot
                     else
                         memberYear = 0;
 
+                    // Get section as an integer from the string role
                     split = allMembers.ToArray()[i].Roles.ToArray()[1].ToString().Split("; ");
                     memberSectRaw = split[1];
 
+                    // Get integer role from string
                     if (memberSectRaw == "Section One")
                         memberSection = 1;
                     else if (memberSectRaw == "Section Two")
@@ -141,7 +147,7 @@ namespace AttendanceBot
                 {
                     if (studentID == allStudents[j].IdNum)
                     {
-                        allStudents[j].TimesPresent++;
+                        allStudents[j].TimesPresent++; 
                         years[allStudents[j].Year - 1]++;
                         sections[allStudents[j].Section - 1]++;
                     }
@@ -179,7 +185,7 @@ namespace AttendanceBot
         }
 
         /// <summary>
-        /// Builds and saves an attendance report consisting of present students from both class sections, and all absent students from the specified section
+        /// Builds and saves an attendance report consisting of present students from both class sections, and all absent students from the current section
         /// </summary>
         public Task GenerateAttendanceReport(List<Student> allStudents, string reportFile, int year, int section)
         {
@@ -237,7 +243,7 @@ namespace AttendanceBot
         }
 
         /// <summary>
-        /// Auto-sends a message vs DM telling students that their were absent from class
+        /// Auto-sends a message via DM telling students that their were absent from class
         /// </summary>
         static async Task MessageAbsentStudents(CommandContext ctx, List<Student> allStudents, int year, int section)
         {

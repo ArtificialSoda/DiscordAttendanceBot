@@ -1,20 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {}
+    "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {}
   },
   "projects": {
-    "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {
+    "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
+        "projectUniqueName": "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
         "projectName": "AttendanceBot",
-        "projectPath": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
-        "packagesPath": "C:\\Users\\Brent\\.nuget\\packages\\",
-        "outputPath": "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\",
+        "projectPath": "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\AttendanceBot.csproj",
+        "packagesPath": "C:\\Users\\Robynmarie\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Brent\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Robynmarie\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,7 +25,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "E:\\School\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\Nuget": {},
+          "C:\\Users\\Robynmarie\\Documents\\GitHub\\FinalProject-IT\\AttendanceBot\\AttendanceBot\\obj\\Nuget": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -67,7 +70,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.202\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.300\\RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -76,15 +76,15 @@ namespace AttendanceBot
 
             string[] split;
             string memberNickName;
-            string memberYrRaw;
-            string memberSectRaw;
+            string memberYrRaw = string.Empty;
+            string memberSectRaw = string.Empty;
             ulong memberID;
             int memberYear;
             int memberSection;
 
             for (int i = 0; i < memberInfo.Length; i++)
             {
-                if (allMembers.ToArray()[i].Roles.Count() == 2 && allMembers.ToArray()[i].IsBot == false)
+                if (allMembers.ToArray()[i].IsBot == false)
                 {
                     // Get nickname from string member info
                     split = memberInfo[i].Split("(");
@@ -93,9 +93,22 @@ namespace AttendanceBot
                     // Get member ID from split string of member info
                     memberID = Convert.ToUInt64(split[0].Substring(7, 18));
 
-                    // Get member year from first role
-                    split = allMembers.ToArray()[i].Roles.ToArray()[0].ToString().Split("; ");
-                    memberYrRaw = split[1];
+                    for (int j = 0; j < allMembers.ToArray()[i].Roles.ToArray().Length; j++)
+                    {
+                        // Get member year from roles
+                        if (allMembers.ToArray()[i].Roles.ToArray()[j].ToString().Contains("Year"))
+                        {
+                            split = allMembers.ToArray()[i].Roles.ToArray()[j].ToString().Split("; ");
+                            memberYrRaw = split[1];
+                        }
+
+                        // Get member section from roles
+                        if (allMembers.ToArray()[i].Roles.ToArray()[j].ToString().Contains("Section"))
+                        {
+                            split = allMembers.ToArray()[i].Roles.ToArray()[j].ToString().Split("; ");
+                            memberSectRaw = split[1];
+                        }
+                    }
 
                     // Get year as an integer from the string role
                     if (memberYrRaw == "First Year")
@@ -107,11 +120,7 @@ namespace AttendanceBot
                     else
                         memberYear = 0;
 
-                    // Get section as an integer from the string role
-                    split = allMembers.ToArray()[i].Roles.ToArray()[1].ToString().Split("; ");
-                    memberSectRaw = split[1];
-
-                    // Get integer role from string
+                    // Get section as an integer from string role
                     if (memberSectRaw == "Section One")
                         memberSection = 1;
                     else if (memberSectRaw == "Section Two")
@@ -121,7 +130,6 @@ namespace AttendanceBot
 
                     if (memberYear != 0 && memberSection != 0) // Only adds students with valid years and sections
                         allStudents.Add(new Student(memberNickName, memberYear, memberSection, memberID));
-
                 }
             }
         }
@@ -219,20 +227,21 @@ namespace AttendanceBot
                     absentStudents.Append(string.Format("{0}\n", allStudents[i].NickName));
                 }
             }
-
+            
             // Add present out of section students to report
+            report.Append("\nPresent Out Of Section Students\n\n");
             if (outOfSectionStudents != null)
-            {
-                report.Append("\nPresent Out Of Section Students\n\n");
                 report.Append(outOfSectionStudents);
-            }
+            else
+                report.Append("n/a\n");
 
             // Add absent students to report
+            report.Append("\nAbsent Students\n\n");
             if (absentStudents != null)
-            {
-                report.Append("\nAbsent Students\n\n");
                 report.Append(absentStudents);
-            }
+            else
+                report.Append("n/a\n");
+
 
             // Write the report
             StreamWriter sr = new StreamWriter(reportFile, true);

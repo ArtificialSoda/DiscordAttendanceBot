@@ -67,14 +67,14 @@ namespace AttendanceBot
         /// The 'cmd' string is the command's name that will be used as the Embedded Message's title.
         /// The 'desc' string is the command's description that will be used as the Embedded Message's description.
         /// </summary>
-        public async Task<DiscordEmbedBuilder> HelpMessage(string cmd, string desc)
+        public Task<DiscordEmbedBuilder> HelpMessage(string cmd, string desc)
         {
-            return new DiscordEmbedBuilder()
+            return Task.FromResult(new DiscordEmbedBuilder()
             {
                 Color = DiscordColor.CornflowerBlue,
                 Title = cmd,
                 Description = desc
-            };
+            });
         }
 
         /// <summary>
@@ -82,14 +82,14 @@ namespace AttendanceBot
         /// The 'ErrorMessage' task contains one required parameter 'error'.
         /// The 'error' string is the description of the triggered error.
         /// </summary>
-        public async Task<DiscordEmbedBuilder> ErrorMessage(string error)
+        public Task<DiscordEmbedBuilder> ErrorMessage(string error)
         {
-            return new DiscordEmbedBuilder()
+            return Task.FromResult(new DiscordEmbedBuilder()
             {
                 Color = DiscordColor.DarkRed,
                 Title = "Error",
                 Description = error
-            };
+            });
         }
 
         /// <summary>
@@ -98,21 +98,21 @@ namespace AttendanceBot
         /// The 'user' DiscordMember is the user object who triggered the help command.
         /// The 'cmd' string is the command called by the user.
         /// </summary>
-        public async Task<Boolean> IsAccessible(DiscordMember user, string cmd)
+        public Task<Boolean> IsAccessible(DiscordMember user, string cmd)
         {
             Dictionary<string, string> FuncFamily = new Dictionary<string, string>()
-                {
-                    {"end", "teacher"},
-                    {"attendance", "teacher"},
-                };
+            {
+                {"end", "teacher"},
+                {"attendance", "teacher"},
+            };
 
             if (cmd == "help")
-                return true;
+                return Task.FromResult(true);
 
             foreach (DiscordRole role in user.Roles)
                 if (FuncFamily[cmd] == role.Name.ToLower())
-                    return true;
-            return false;
+                    return Task.FromResult(true);
+            return Task.FromResult(false);
         }
 
         /// <summary>
@@ -120,7 +120,7 @@ namespace AttendanceBot
         /// The 'GetDescription' task contains one required parameter 'cmd'.
         /// The 'cmd' string is the command called by the user.
         /// </summary>
-        public async Task<String> GetDescription(string cmd)
+        public Task<String> GetDescription(string cmd)
         {
             Dictionary<string, string> descriptions = new Dictionary<string, string>()
                 {
@@ -130,9 +130,9 @@ namespace AttendanceBot
                 };
 
             if (cmd == "")
-                return string.Format("{0}\n{1}\n{2}\n{3}", descriptions["attendance"], descriptions["end"], descriptions["info"], descriptions["start"]);
+                return Task.FromResult(string.Format("{0}\n{1}\n{2}\n{3}", descriptions["attendance"], descriptions["end"], descriptions["info"], descriptions["start"]));
             else
-                return descriptions[cmd];
+                return Task.FromResult(descriptions[cmd]);
         }
     }
 }

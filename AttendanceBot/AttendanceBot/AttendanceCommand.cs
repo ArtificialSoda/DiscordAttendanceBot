@@ -34,11 +34,21 @@ namespace AttendanceBot
 
         [Command("attendance")]
         [Description("Takes periodic class attendance via student reaction to the attendance poll.")]
-        [RequireRoles(RoleCheckMode.Any, "Teacher", "Professor", "Admin", "Administrator")] // Roles can be changed, if need be
         public async Task Poll(CommandContext ctx,
                               [Description("OPTIONAL: Duration of class (default: 60m)")] TimeSpan classDuration = default(TimeSpan),
                               [Description("OPTIONAL: Frequency of polls (default: 20m)")] TimeSpan pollFrequency = default(TimeSpan))
         {
+            bool b = false;
+            DiscordMember user = ctx.Member;
+            foreach (DiscordRole role in user.Roles)
+                if (role.ToString().ToLower() == "teacher")
+                    b = true;
+            if (!b)
+            {
+                var error = await ErrorMessage("You must be a 'teacher' to access this command!");
+                await ctx.Channel.SendMessageAsync(null, false, error);
+                return;
+            }
             List<Student> allStudents = new List<Student>();
             List<ulong> presentStudents = new List<ulong>();
 
@@ -406,6 +416,18 @@ namespace AttendanceBot
                     }
                 }
             }
+        }
+        #endregion
+
+        #region Method - ErrorMessage
+        public Task<DiscordEmbedBuilder> ErrorMessage(string error)
+        {
+            return Task.FromResult(new DiscordEmbedBuilder()
+            {
+                Color = DiscordColor.DarkRed,
+                Title = "Error",
+                Description = error
+            });
         }
         #endregion
     }

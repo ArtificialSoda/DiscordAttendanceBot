@@ -1,6 +1,6 @@
 /*
-    Author: Jordan McIntyre
-    Latest Update: May 23rd, 2020
+    Author: Jordan McIntyre, Fabian Dimitrov
+    Latest Update: May 28th, 2020
     Description: This program contains all methods related to the Help Command.
 */
 
@@ -34,7 +34,7 @@ namespace AttendanceBot
             DiscordMember user = ctx.Member;
             if (cmd != "")
             {
-                if ((new string[] { "help", "start", "end", "attendance" }).Contains(cmd))
+                if ((new string[] { "help", "end", "attendance" }).Contains(cmd))
                 {
                     if (await IsAccessible(user, cmd))
                     {
@@ -102,7 +102,6 @@ namespace AttendanceBot
         {
             Dictionary<string, string> FuncFamily = new Dictionary<string, string>()
                 {
-                    {"start", "teacher"},
                     {"end", "teacher"},
                     {"attendance", "teacher"},
                 };
@@ -126,9 +125,8 @@ namespace AttendanceBot
             Dictionary<string, string> descriptions = new Dictionary<string, string>()
                 {
                     {"help", "The `help` command has one optional parameter `cmd` which will output either the given command's description, or it will output a description for all commands."},
-                    {"start", "The `start` command has one parameter `minutes` which determines how long class will be."},
                     {"end", "The `end` command has no parameters, once called class will end."},
-                    {"attendance", "The `attendance` command has four parameters; `class time`, `poll time`, `section number` and `year number`."}
+                    {"attendance", "The `attendance` command has two optional parameters; `class time` (default: 60m), `poll frequency` (default: 20m)."}
                 };
 
             if (cmd == "")

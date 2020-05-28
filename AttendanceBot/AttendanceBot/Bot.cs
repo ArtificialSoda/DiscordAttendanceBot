@@ -1,4 +1,11 @@
 ﻿using DSharpPlus;
+﻿/*
+    Author: Jordan McIntyre, Fabian Dimitrov, Brent Pereira
+    Latest Update: May 27th, 2020
+    Description: This program contains all methods related to the bot creation and configuration
+*/
+
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
 using DSharpPlus.Interactivity;
@@ -29,6 +36,7 @@ namespace AttendanceBot
         {
             #region Bot Configuration
             
+
             // Load in the JSON configuration (token & prefix)
             var json = string.Empty;
 
@@ -45,6 +53,8 @@ namespace AttendanceBot
                 TokenType = TokenType.Bot,
                 AutoReconnect = true, // Reconnect automatically if the bot turns off
                 LogLevel = LogLevel.Debug, // Get all logs rather than just errors
+                AutoReconnect = true, // Reconnects automatically if the bot turns off
+                LogLevel = LogLevel.Debug, // Gets all logs rather than just errors
                 UseInternalLogHandler = true
             };
 
@@ -58,6 +68,14 @@ namespace AttendanceBot
                 Timeout = TimeSpan.FromMinutes(5) 
             });
             #endregion
+
+            Client.UseInteractivity(new InteractivityConfiguration
+            {
+                Timeout = TimeSpan.FromMinutes(5)
+            });
+            #endregion
+
+            #region Commands Configuration
 
             #region Commands Configuration
            
@@ -74,6 +92,12 @@ namespace AttendanceBot
             #endregion 
 
            
+
+            // Enables user-created commands
+            Commands.RegisterCommands<AttendanceCommand>();
+            Commands.RegisterCommands<HelpCommand>();
+            #endregion
+
             await Client.ConnectAsync(); // Connects the bot
             await Task.Delay(-1); // Stops the bot from quitting early 
         }

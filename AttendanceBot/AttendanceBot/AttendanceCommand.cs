@@ -41,7 +41,7 @@ namespace AttendanceBot
             bool b = false;
             DiscordMember user = ctx.Member;
             foreach (DiscordRole role in user.Roles)
-                if (role.ToString().ToLower() == "teacher")
+                if (role.Name.ToString().ToLower() == "teacher")
                     b = true;
             if (!b)
             {

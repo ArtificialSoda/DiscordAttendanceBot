@@ -56,7 +56,7 @@ namespace AttendanceBot
             }
             else
             {
-                var msg = await HelpMessage("attendance, end, help, start", "Please enter one of the following commands to learn more!");
+                var msg = await HelpMessage("attendance, end, help", "Please enter one of the following commands to learn more!");
                 await ctx.Channel.SendMessageAsync(null, false, msg);
             }
         }

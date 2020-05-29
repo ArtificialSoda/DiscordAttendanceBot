@@ -1,5 +1,5 @@
 ﻿/*
-    Author: Jordan McIntyre, Fabian Dimitrov, Brent Pereira
+    Author: Jordan McIntyre, Fabian Dimitrov, Brent Pereira, Maxence Roy
     Latest Update: May 28th, 2020
     Description: This program contains all methods related to the Attendance Command.
 */
@@ -31,7 +31,6 @@ namespace AttendanceBot
     /// </summary>
     class AttendanceCommand : BaseCommandModule
     {
-
         [Command("attendance")]
         [Description("Takes periodic class attendance via student reaction to the attendance poll.")]
         public async Task Poll(CommandContext ctx,
@@ -41,11 +40,11 @@ namespace AttendanceBot
             bool b = false;
             DiscordMember user = ctx.Member;
             foreach (DiscordRole role in user.Roles)
-                if (role.ToString().ToLower() == "teacher")
+                if (role.Name.ToString().ToLower() == "teacher")
                     b = true;
             if (!b)
             {
-                var error = await ErrorMessage("You must be a 'teacher' to access this command!");
+                var error = await ErrorMessage("You must have a 'Teacher' role to access this command!");
                 await ctx.Channel.SendMessageAsync(null, false, error);
                 return;
             }
@@ -56,7 +55,7 @@ namespace AttendanceBot
             string reportFile = string.Format("../../../../../AttendanceReport-{0}.csv", DateTime.Now.ToString("MM-dd"));
 
             if (classDuration == default)
-                classDuration = TimeSpan.FromMinutes(60); //Sets default class duration if it was omitted at command call
+                classDuration = TimeSpan.FromMinutes(60); // Sets default class duration if it was omitted at command call
 
             Stopwatch classTime = Stopwatch.StartNew();
             Stopwatch timeSincePoll = Stopwatch.StartNew();
@@ -64,26 +63,32 @@ namespace AttendanceBot
             // Generates a list of all students in the Discord Server 
             await GetStudents(ctx, allStudents);
 
-            bool isFirstPoll = true;
+            bool endCalled = false;
             int numPolls = 0;
             do
-            { 
-                if (isFirstPoll || timeSincePoll.Elapsed >= pollFrequency)
+            {
+                // Checks if '+end' has been called by the teacher. WaitForMessageAsync is asynchronous from the code below.
+                var interactivity = ctx.Client.GetInteractivity();
+                var endMsg = interactivity.WaitForMessageAsync(x => x.Channel == ctx.Channel && x.Author.Id == ctx.User.Id && x.Content == "+end", pollFrequency);
+
+                numPolls++;
+
+                // Generates the attendance poll
+                timeSincePoll.Restart();
+                await CreatePoll(ctx, pollFrequency, presentStudents);
+
+                // Sorts students who reacted to the poll by current year and section
+                await SortPresentStudents(ctx, allStudents, presentStudents, out year, out section);
+
+                presentStudents.Clear();
+
+                if (endMsg.Result.Result != null)
                 {
-                    isFirstPoll = false;
-                    numPolls++;
-
-                    // Generates the attendance poll
-                    timeSincePoll.Restart();
-                    await CreatePoll(ctx, pollFrequency, presentStudents);
-
-                    // Sorts students who reacted to the poll by current year and section
-                    await SortPresentStudents(ctx, allStudents, presentStudents, out year, out section);
-
-                    presentStudents.Clear();
+                    await ctx.Channel.SendMessageAsync("Class has ended early!");
+                    endCalled = true;
                 }
             }
-            while (classTime.Elapsed < classDuration);
+            while (classTime.Elapsed < classDuration && !endCalled);
 
             timeSincePoll.Stop();
             classTime.Stop();
@@ -412,7 +417,12 @@ namespace AttendanceBot
                 {
                     if (memberID == allStudents[j].IdNum && allStudents[j].Section == section && allStudents[j].Year == year && allStudents[j].TimesPresent == 0) // Finds absent students from current section
                     {
-                        await allMembers.ToArray()[i].SendMessageAsync(string.Format("You were absent from {0} on {1}", ctx.Guild.Name, DateTime.Now.ToString("MM-dd"))); 
+                        string name;
+                        if (ctx.Member.Nickname.ToString() == ctx.Member.Username.ToString())
+                            name = ctx.Member.Nickname;
+                        else
+                            name = string.Format("{0} ({1})", ctx.Member.Nickname, ctx.Member.Username);
+                        await allMembers.ToArray()[i].SendMessageAsync(string.Format("You were absent from {0}'s class on {1} at {2}", name, DateTime.Now.ToString("MM-dd"), DateTime.Now.ToString("H:mm:ss"))); 
                     }
                 }
             }

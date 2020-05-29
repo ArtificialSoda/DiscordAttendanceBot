@@ -34,7 +34,7 @@ namespace AttendanceBot
             DiscordMember user = ctx.Member;
             if (cmd != "")
             {
-                if ((new string[] { "help", "end", "attendance" }).Contains(cmd))
+                if ((new string[] { "help", "attendance" }).Contains(cmd))
                 {
                     if (await IsAccessible(user, cmd))
                     {
@@ -44,7 +44,7 @@ namespace AttendanceBot
                     }
                     else
                     {
-                        var error = await ErrorMessage("You must be a 'teacher' access that command!");
+                        var error = await ErrorMessage("You must have a 'Teacher' role to access that command!");
                         await ctx.Channel.SendMessageAsync(null, false, error);
                     }
                 }
@@ -56,7 +56,7 @@ namespace AttendanceBot
             }
             else
             {
-                var msg = await HelpMessage("attendance, end, help, start", "Please enter one of the following commands to learn more!");
+                var msg = await HelpMessage("attendance, help", "Please enter one of the following commands to learn more!");
                 await ctx.Channel.SendMessageAsync(null, false, msg);
             }
         }
@@ -102,7 +102,6 @@ namespace AttendanceBot
         {
             Dictionary<string, string> FuncFamily = new Dictionary<string, string>()
             {
-                {"end", "teacher"},
                 {"attendance", "teacher"},
             };
 
@@ -124,13 +123,12 @@ namespace AttendanceBot
         {
             Dictionary<string, string> descriptions = new Dictionary<string, string>()
                 {
-                    {"help", "The `help` command has one optional parameter `cmd` which will output either the given command's description, or it will output a description for all commands."},
-                    {"end", "The `end` command has no parameters, once called class will end."},
-                    {"attendance", "The `attendance` command has two optional parameters; `class time` (default: 60m), `poll frequency` (default: 20m)."}
+                    {"help", "The `help` command has one optional parameter `cmd` which will output either the given command's description, or it will output the list of all commands."},
+                    {"attendance", "The `attendance` command has two optional parameters; `class time` (default: 60m), `poll frequency` (default: 20m). Say '+end' to end class early."}
                 };
 
             if (cmd == "")
-                return Task.FromResult(string.Format("{0}\n{1}\n{2}\n{3}", descriptions["attendance"], descriptions["end"], descriptions["info"], descriptions["start"]));
+                return Task.FromResult(string.Format("{0}\n{1}", descriptions["attendance"], descriptions["info"]));
             else
                 return Task.FromResult(descriptions[cmd]);
         }
